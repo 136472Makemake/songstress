@@ -59,27 +59,31 @@ async def play_next_track(ctx):
     if guild_id in music_queues and len(music_queues[guild_id]) > 0:
         # Get the next track from the queue
         track = music_queues[guild_id].popleft()
-        audio_source = FFmpegPCMAudio(track['url'], options='-bufsize 20M')
+        audio_source = FFmpegPCMAudio(track['url'], before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5", options='-bufsize 128M -vn')
 
         # Play the track and announce it
         voice_client.play(audio_source, after=lambda e: asyncio.run_coroutine_threadsafe(play_next_track(ctx), bot.loop))
         await ctx.send(f"✨ Playing {track['title']} by {track['requested_by']}. 🧚")
 
-
 @bot.command(name='play')
-async def play(ctx, *, url=None):
+async def play(ctx, *, query=None):
     if not ctx.author.voice:
         await ctx.send("✨ You need to be in a voice channel to use this command. 🧚")
         return
     
     voice_client = await get_voice_client(ctx)
 
+    if not voice_client:
+        await ctx.send("Error connecting to voice channel.")
+        return
+
     if ctx.message.attachments:
         await handle_attachment(ctx, voice_client)
-    elif url:
-        await handle_youtube(ctx, voice_client, url)
+    elif query:
+        await handle_youtube(ctx, voice_client, query)
     else:
-        await ctx.send("✨ Please attach an MP3 file or provide a YouTube URL. 🌟")
+        await ctx.send("✨ Please attach an MP3 file or provide a YouTube URL or song name. 🌟")
+
 
 async def get_voice_client(ctx):
     voice_client = ctx.message.guild.voice_client
@@ -100,23 +104,35 @@ async def handle_attachment(ctx, voice_client):
     else:
         await ctx.send("✨ Please attach an MP3 file. 🧚")
 
-async def handle_youtube(ctx, voice_client, url):
+async def handle_youtube(ctx, voice_client, query):
     ydl_opts = {
-    'format': 'bestaudio/best',
-    'postprocessors': [{
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'mp3',
-        'preferredquality': '128',  # Lower quality might be more stable
-    }],
+        'default_search': 'ytsearch',  # Enable searching by default
+        'format': 'bestaudio/best',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+        'quiet': True,
     }
+
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
-            info = ydl.extract_info(url, download=False)
-            track = create_track(info['url'], info['title'], ctx.author.display_name)
+            # The query can be a URL or a search term
+            info = ydl.extract_info(query, download=False)
+            if 'entries' in info:
+                # Take the first result from a search
+                track_info = info['entries'][0]
+            else:
+                # Direct URL, so just use the info
+                track_info = info
+
+            track = create_track(track_info['url'], track_info['title'], ctx.author.display_name)
             add_to_queue(ctx, track)
             await play_track_if_not_playing(ctx, voice_client, track['title'])
         except Exception as e:
             await ctx.send(f"Error: {str(e)}")
+
 
 def create_track(url, title, requested_by):
     return {'url': url, 'title': title, 'requested_by': requested_by}
