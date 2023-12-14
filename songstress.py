@@ -3,6 +3,11 @@ import asyncio
 from discord.ext import commands
 from discord import FFmpegPCMAudio
 import yt_dlp
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+BOT_TOKEN = os.getenv('BOT_TOKEN')
 
 intents = discord.Intents.default()
 intents.guilds = True
@@ -160,10 +165,8 @@ async def resume(ctx):
     else:
         await ctx.send("✨ Audio is not paused. 🧚")
 
-
 @bot.event
 async def on_command_error(ctx, error):
     await ctx.send(f'An error occurred: {str(error)}')
 
-
-bot.run('MTE4NDYxNjUyMzI5NDMyNjc5NA.GC06RC.G7cM_Ylj-widbskVOO6OlZxz19Nj3fwrdfB9a4')
+bot.run(BOT_TOKEN)
