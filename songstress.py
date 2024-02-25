@@ -12,36 +12,10 @@ from utils.bot_init import bot_initialization
 
 load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
-<<<<<<< HEAD
-
-intents = discord.Intents.default()
-intents.guilds = True
-intents.messages = True
-intents.guild_messages = True
-intents.message_content = True
-intents.messages = True
-
-bot = commands.Bot(command_prefix="!", intents=intents)
-
-from collections import deque
-
-music_queues = {}
-
-@bot.event
-async def on_ready():
-    print(f"{bot.user.name} has connected to Discord!")
-
-
-@bot.command(name='test')
-async def test(ctx):
-    await ctx.send("Test command received")
-
-=======
 bot = bot_initialization()
 music_queues = {}
 
 # commands 
->>>>>>> aa3a664e364f5b39d1801206b80b2d98e392d175
 
 @bot.command(name='join')
 async def join(ctx):
@@ -64,20 +38,6 @@ async def leave(ctx):
     else:
         await ctx.send("The bot is not connected to a voice channel.")
 
-<<<<<<< HEAD
-async def play_next_track(ctx):
-    guild_id = ctx.guild.id
-    voice_client = ctx.message.guild.voice_client
-
-    if guild_id in music_queues and len(music_queues[guild_id]) > 0:
-        track = music_queues[guild_id].popleft()
-        audio_source = FFmpegPCMAudio(track['url'], before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5", options='-bufsize 128M -vn')
-
-        voice_client.play(audio_source, after=lambda e: asyncio.run_coroutine_threadsafe(play_next_track(ctx), bot.loop))
-        await ctx.send(f"✨ Playing {track['title']} by {track['requested_by']}. 🧚")
-
-=======
->>>>>>> aa3a664e364f5b39d1801206b80b2d98e392d175
 @bot.command(name='play')
 async def play(ctx, *, query=None):
 
