@@ -14,16 +14,13 @@ intents.guilds = True
 intents.messages = True
 intents.guild_messages = True
 intents.message_content = True
-intents.messages = True  # This enables the message content intent
+intents.messages = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 from collections import deque
 
-# Dictionary where the key is the guild ID and the value is a queue of tracks
 music_queues = {}
-
-
 
 @bot.event
 async def on_ready():
@@ -57,11 +54,9 @@ async def play_next_track(ctx):
     voice_client = ctx.message.guild.voice_client
 
     if guild_id in music_queues and len(music_queues[guild_id]) > 0:
-        # Get the next track from the queue
         track = music_queues[guild_id].popleft()
         audio_source = FFmpegPCMAudio(track['url'], before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5", options='-bufsize 128M -vn')
 
-        # Play the track and announce it
         voice_client.play(audio_source, after=lambda e: asyncio.run_coroutine_threadsafe(play_next_track(ctx), bot.loop))
         await ctx.send(f"✨ Playing {track['title']} by {track['requested_by']}. 🧚")
 
@@ -96,7 +91,7 @@ async def get_voice_client(ctx):
     return ctx.message.guild.voice_client
 
 async def handle_attachment(ctx, voice_client):
-    attachment = ctx.message.attachments[0]  # Get the first attachment
+    attachment = ctx.message.attachments[0]
     if attachment.filename.endswith('.mp3'):
         track = create_track(attachment.url, attachment.filename, ctx.author.display_name)
         add_to_queue(ctx, track)
@@ -106,7 +101,7 @@ async def handle_attachment(ctx, voice_client):
 
 async def handle_youtube(ctx, voice_client, query):
     ydl_opts = {
-        'default_search': 'ytsearch',  # Enable searching by default
+        'default_search': 'ytsearch',
         'format': 'bestaudio/best',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
@@ -118,13 +113,10 @@ async def handle_youtube(ctx, voice_client, query):
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
-            # The query can be a URL or a search term
             info = ydl.extract_info(query, download=False)
             if 'entries' in info:
-                # Take the first result from a search
                 track_info = info['entries'][0]
             else:
-                # Direct URL, so just use the info
                 track_info = info
 
             track = create_track(track_info['url'], track_info['title'], ctx.author.display_name)
@@ -155,8 +147,8 @@ async def next(ctx):
     voice_client = ctx.message.guild.voice_client
 
     if guild_id in music_queues and voice_client.is_playing():
-        voice_client.stop()  # This will stop the current track
-        await play_next_track(ctx)  # Play the next track in the queue
+        voice_client.stop()
+        await play_next_track(ctx)
     else:
         await ctx.send("✨ No track is currently playing. 🧚")
 
